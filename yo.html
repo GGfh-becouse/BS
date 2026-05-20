@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Brawl Stars | Рейтинг бойцов</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f7fb;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            padding: 2rem 1.5rem;
+            color: #1a1e2b;
+        }
+
+        /* контейнер с ограничением ширины */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* заголовок */
+        .header {
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 1rem;
+        }
+
+        .title-section h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #1e2b3c, #2c3e4e);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .title-section p {
+            font-size: 0.9rem;
+            color: #5b6e8c;
+            margin-top: 0.25rem;
+        }
+
+        .result-btn {
+            background: #1a2c3e;
+            border: none;
+            padding: 0.7rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            font-family: inherit;
+        }
+
+        .result-btn:hover {
+            background: #0f1e2c;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+        }
+
+        /* таблица — современный минимализм */
+        .brawlers-table-wrapper {
+            overflow-x: auto;
+            border-radius: 24px;
+            background: white;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .brawlers-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            min-width: 600px;
+        }
+
+        .brawlers-table th {
+            text-align: left;
+            padding: 1rem 1rem;
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #1e2f3f;
+            border-bottom: 1px solid #e9edf2;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+        }
+
+        .brawlers-table td {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid #eff3f8;
+            vertical-align: middle;
+        }
+
+        /* имя бойца */
+        .brawler-name {
+            font-weight: 600;
+            color: #0f2b3b;
+            background: #ffffff;
+            white-space: nowrap;
+        }
+
+        /* звездный рейтинг (оценка) */
+        .rating-control {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .stars {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .star {
+            font-size: 1.55rem;
+            cursor: pointer;
+            transition: transform 0.1s ease, color 0.1s;
+            color: #d4dae5;
+            user-select: none;
+            line-height: 1;
+        }
+
+        .star.active {
+            color: #f5b042;
+            text-shadow: 0 0 2px rgba(245,176,66,0.3);
+        }
+
+        .star:hover {
+            transform: scale(1.1);
+            color: #f0a500;
+        }
+
+        .rating-value {
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: #edf2f7;
+            padding: 0.2rem 0.6rem;
+            border-radius: 40px;
+            color: #2c3e4e;
+            min-width: 45px;
+            text-align: center;
+        }
+
+        /* легкий адаптив */
+        @media (max-width: 700px) {
+            body {
+                padding: 1rem;
+            }
+            .brawlers-table th, .brawlers-table td {
+                padding: 0.75rem 0.7rem;
+            }
+            .star {
+                font-size: 1.3rem;
+            }
+            .rating-control {
+                gap: 6px;
+            }
+        }
+
+        /* модальное окно результатов — стильно и воздушно */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 520px;
+            border-radius: 2rem;
+            padding: 1.8rem 1.8rem 2rem;
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.2);
+            animation: fadeUp 0.2s ease;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.4rem;
+            border-bottom: 1px solid #eef2f8;
+            padding-bottom: 0.75rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #172c3a;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #7f8c9a;
+            transition: color 0.2s;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: #1f2f3c;
+        }
+
+        .top-list {
+            list-style: none;
+            margin: 0;
+        }
+
+        .top-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid #eff3fa;
+            font-size: 1rem;
+        }
+
+        .rank-number {
+            font-weight: 600;
+            background: #eef3fc;
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 30px;
+            color: #1e3b4a;
+            margin-right: 12px;
+        }
+
+        .top-brawler-name {
+            font-weight: 500;
+            flex: 1;
+            margin-left: 6px;
+        }
+
+        .top-rating {
+            background: #fef5e7;
+            padding: 0.2rem 0.65rem;
+            border-radius: 30px;
+            font-weight: 600;
+            color: #c97e0a;
+        }
+
+        .empty-rank {
+            text-align: center;
+            color: #8a99b0;
+            padding: 1.5rem 0;
+            font-style: italic;
+        }
+
+        button {
+            background: none;
+            border: none;
+        }
+
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.7rem;
+            color: #9aaebf;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <div class="title-section">
+            <h1>⚡ BRAWL INDEX</h1>
+            <p>Оцените бойцов · от 1 до 5 звёзд</p>
+        </div>
+        <button class="result-btn" id="showResultsBtn">🏆 РЕЗУЛЬТАТ</button>
+    </div>
+
+    <div class="brawlers-table-wrapper">
+        <table class="brawlers-table" id="brawlersTable">
+            <thead>
+                <tr><th>Боец</th><th>Оценка</th></tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- динамически заполняется из списка -->
+            </tbody>
+        </table>
+    </div>
+    <footer>★ Нажми на звезду, чтобы оценить — результат покажет лучших бойцов</footer>
+</div>
+
+<!-- Модальное окно результатов -->
+<div id="resultModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>✨ Топ лучших бойцов</h2>
+            <button class="close-modal" id="closeModalBtn">&times;</button>
+        </div>
+        <div id="topBrawlersList">
+            <!-- динамический список -->
+            <div class="empty-rank">Загрузка...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // 1. Полный список персонажей в точном соответствии с заданием
+    // --------------------------------------------------------------
+    const brawlersList = [
+        "Шелли", "Нита", "Кольт", "Булл", "Брок", "Барли", "Эль Примо", "Поко", "Роза", "Рико",
+        "Джесси", "Динамайк", "Дэррил", "Пенни", "Тик", "Карл", "8-Бит", "Джеки", "Гас", "Бо",
+        "Пайпер", "Пэм", "Фрэнк", "Биби", "Беа", "Эмз", "Гейл", "Нани", "Колетт", "Эдгар",
+        "Сту", "Белль", "Гром", "Грифф", "Эш", "Лола", "Бонни", "Сэм", "Мэнди", "Мэйси",
+        "Хэнк", "Перл", "Ларри и Лори", "Анджело", "Берри", "Шейд", "Мортис", "Тара", "Джин",
+        "Мистер П", "Макс", "Лу", "Байрон", "Руффс", "Сквик", "Базз", "Фэнг", "Ева", "Джанет",
+        "Отис", "Бастер", "Грэй", "R-T", "Виллоу", "Даг", "Чак", "Чарли", "Мико", "Мелоди",
+        "Клэнси", "Мо", "Джуджу", "Спайк", "Кроу", "Леон", "Амбер", "Сёрдж", "Корделиус",
+        "Драко", "Мипл", "Мина", "Алли", "Транк", "Болт"
+    ];
+
+    // Хранилище оценок: ключ - имя бойца, значение - число (1-5), по умолчанию 0 (не оценен)
+    let ratings = new Map();
+
+    // Инициализация: все бойцы получают 0 (нет оценки)
+    brawlersList.forEach(name => {
+        ratings.set(name, 0);
+    });
+
+    // Функция для отрисовки таблицы (поддерживает актуальные оценки)
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        
+        brawlersList.forEach(brawlerName => {
+            const currentRating = ratings.get(brawlerName) || 0;
+            const row = document.createElement('tr');
+            
+            // Ячейка имени
+            const nameCell = document.createElement('td');
+            nameCell.className = 'brawler-name';
+            nameCell.textContent = brawlerName;
+            
+            // Ячейка с контролом оценки
+            const ratingCell = document.createElement('td');
+            ratingCell.className = 'rating-cell';
+            
+            // Контейнер звёзд + цифра
+            const ratingWrapper = document.createElement('div');
+            ratingWrapper.className = 'rating-control';
+            
+            // Блок звёзд (5 штук)
+            const starsDiv = document.createElement('div');
+            starsDiv.className = 'stars';
+            
+            // Создаём 5 звёзд
+            for (let i = 1; i <= 5; i++) {
+                const starSpan = document.createElement('span');
+                starSpan.classList.add('star');
+                starSpan.textContent = '★';
+                if (currentRating >= i) {
+                    starSpan.classList.add('active');
+                }
+                // обработчик оценки для конкретной звезды
+                starSpan.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    setRating(brawlerName, i);
+                });
+                starsDiv.appendChild(starSpan);
+            }
+            
+            // Отображение числового рейтинга (0 если не оценен)
+            const ratingValueSpan = document.createElement('span');
+            ratingValueSpan.className = 'rating-value';
+            ratingValueSpan.textContent = currentRating > 0 ? currentRating : '—';
+            
+            ratingWrapper.appendChild(starsDiv);
+            ratingWrapper.appendChild(ratingValueSpan);
+            ratingCell.appendChild(ratingWrapper);
+            
+            row.appendChild(nameCell);
+            row.appendChild(ratingCell);
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Функция установки рейтинга и обновления интерфейса (только для конкретного бойца)
+    function setRating(brawlerName, starValue) {
+        // starValue от 1 до 5
+        if (starValue < 1) starValue = 1;
+        if (starValue > 5) starValue = 5;
+        ratings.set(brawlerName, starValue);
+        
+        // Обновляем только одну строку, чтобы не перерисовывать всю таблицу (оптимизация)
+        updateSingleRow(brawlerName);
+    }
+    
+    // Обновить строку конкретного бойца без полной перерисовки таблицы
+    function updateSingleRow(brawlerName) {
+        const tbody = document.getElementById('tableBody');
+        if (!tbody) return;
+        const rows = tbody.querySelectorAll('tr');
+        const brawlerIndex = brawlersList.findIndex(name => name === brawlerName);
+        if (brawlerIndex === -1) return;
+        const targetRow = rows[brawlerIndex];
+        if (!targetRow) return;
+        
+        const currentRating = ratings.get(brawlerName) || 0;
+        const ratingCell = targetRow.cells[1];
+        if (!ratingCell) return;
+        
+        // Пересобираем контрол звёзд внутри ячейки
+        const ratingWrapper = document.createElement('div');
+        ratingWrapper.className = 'rating-control';
+        
+        const starsDiv = document.createElement('div');
+        starsDiv.className = 'stars';
+        
+        for (let i = 1; i <= 5; i++) {
+            const starSpan = document.createElement('span');
+            starSpan.classList.add('star');
+            starSpan.textContent = '★';
+            if (currentRating >= i) {
+                starSpan.classList.add('active');
+            }
+            starSpan.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setRating(brawlerName, i);
+            });
+            starsDiv.appendChild(starSpan);
+        }
+        
+        const ratingValueSpan = document.createElement('span');
+        ratingValueSpan.className = 'rating-value';
+        ratingValueSpan.textContent = currentRating > 0 ? currentRating : '—';
+        
+        ratingWrapper.appendChild(starsDiv);
+        ratingWrapper.appendChild(ratingValueSpan);
+        
+        // заменяем содержимое ячейки
+        ratingCell.innerHTML = '';
+        ratingCell.appendChild(ratingWrapper);
+    }
+    
+    // Функция для показа лучших (результат) — формирует ТОП бойцов, отсортированных по убыванию оценки.
+    // Показывает только тех, у кого оценка >= 1 (кто был оценён хотя бы раз). Если никого нет — сообщение.
+    function getTopRatedBrawlers() {
+        // Преобразуем Map в массив объектов {name, rating}
+        const ratedBrawlers = [];
+        for (let [name, rating] of ratings.entries()) {
+            if (rating > 0) {
+                ratedBrawlers.push({ name, rating });
+            }
+        }
+        // Сортируем по убыванию рейтинга, при равных — по имени (алфавит)
+        ratedBrawlers.sort((a, b) => {
+            if (a.rating !== b.rating) return b.rating - a.rating;
+            return a.name.localeCompare(b.name);
+        });
+        return ratedBrawlers;
+    }
+    
+    // Отображение модального окна с топом
+    function showTopResults() {
+        const topList = getTopRatedBrawlers();
+        const modal = document.getElementById('resultModal');
+        const topContainer = document.getElementById('topBrawlersList');
+        if (!modal || !topContainer) return;
+        
+        if (topList.length === 0) {
+            topContainer.innerHTML = `<div class="empty-rank">😞 Пока никто не оценён. Поставьте звёзды бойцам!</div>`;
+            modal.style.display = 'flex';
+            return;
+        }
+        
+        // Формируем нумерованный список лучших (берём всех, но можно ограничить, но покажем всех)
+        const ul = document.createElement('ul');
+        ul.className = 'top-list';
+        
+        topList.forEach((brawler, idx) => {
+            const li = document.createElement('li');
+            const rankSpan = document.createElement('span');
+            rankSpan.className = 'rank-number';
+            rankSpan.textContent = `${idx + 1}`;
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'top-brawler-name';
+            nameSpan.textContent = brawler.name;
+            
+            const ratingSpan = document.createElement('span');
+            ratingSpan.className = 'top-rating';
+            ratingSpan.textContent = `★ ${brawler.rating}`;
+            
+            li.appendChild(rankSpan);
+            li.appendChild(nameSpan);
+            li.appendChild(ratingSpan);
+            ul.appendChild(li);
+        });
+        
+        topContainer.innerHTML = '';
+        topContainer.appendChild(ul);
+        modal.style.display = 'flex';
+    }
+    
+    // Закрытие модального окна
+    function closeModal() {
+        const modal = document.getElementById('resultModal');
+        if (modal) modal.style.display = 'none';
+    }
+    
+    // Инициализация и обработка событий
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTable();
+        
+        const showBtn = document.getElementById('showResultsBtn');
+        if (showBtn) {
+            showBtn.addEventListener('click', showTopResults);
+        }
+        
+        const closeBtn = document.getElementById('closeModalBtn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeModal);
+        }
+        
+        // клик вне контента модалки для закрытия
+        const modal = document.getElementById('resultModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
+        }
+        
+        // Добавим поддержку клавиши Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+                closeModal();
+            }
+        });
+    });
+</script>
+</body>
+</html>
